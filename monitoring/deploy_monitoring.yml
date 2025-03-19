@@ -1,0 +1,128 @@
+- hosts: monitoring
+  become: true
+  vars:
+    prometheus_dir: /opt/monitoring
+    grafana_dir: /opt/monitoring/grafana
+    prometheus_config: /opt/monitoring/prometheus.yml
+    grafana_provisioning_dir: /opt/monitoring/grafana/provisioning
+    grafana_dashboards_dir: /opt/monitoring/grafana/dashboards
+    prometheus_volume: prometheus_data   # Docker 볼륨 이름
+    grafana_volume: grafana_data         # Docker 볼륨 이름
+
+  tasks:
+    - name: Update apt package index
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - docker.io
+          - prometheus-node-exporter
+          - prometheus-blackbox-exporter
+        state: present
+
+    - name: Add user to Docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Ensure monitoring directories exist
+      file:
+        path: "{{ item }}"
+        mode: '0755'
+      loop:
+        - "{{ prometheus_dir }}"
+        - "{{ grafana_dir }}"
+        - "{{ grafana_provisioning_dir }}"
+        - "{{ grafana_dashboards_dir }}"
+
+    - name: Copy Prometheus config
+      copy:
+        src: prometheus.yml
+        dest: "{{ prometheus_config }}"
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload Prometheus
+
+    - name: Synchronize Grafana provisioning config
+      synchronize:
+        src: "grafana/provisioning/"
+        dest: "{{ grafana_provisioning_dir }}"
+        recursive: yes
+        rsync_opts:
+          - "--exclude=.DS_Store"
+          - "--delete"
+      notify: Restart Grafana
+      become: true
+
+    - name: Copy Grafana dashboards
+      copy:
+        src: grafana/dashboards/
+        dest: "{{ grafana_dashboards_dir }}"
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Grafana
+
+    - name: Create Prometheus data volume
+      docker_volume:
+        name: "{{ prometheus_volume }}"
+        state: present
+
+    - name: Create Grafana data volume
+      docker_volume:
+        name: "{{ grafana_volume }}"
+        state: present
+
+    - name: Check if Prometheus container is running
+      shell: "docker ps --filter 'name=prometheus' --format '{{ '{{' }}.Names{{ '}}' }}'"
+      register: prometheus_running
+      changed_when: false
+
+    - name: Run Prometheus container if not running
+      docker_container:
+        name: prometheus
+        image: prom/prometheus:latest
+        restart_policy: always
+        network_mode: "host"
+        volumes:
+          - "{{ prometheus_config }}:/etc/prometheus/prometheus.yml"
+          - "{{ prometheus_volume }}:/prometheus"
+        command: "--config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle --storage.tsdb.path=/prometheus"
+      when: prometheus_running.stdout == ""
+    
+    - name: Run Grafana container
+      docker_container:
+        name: grafana
+        image: grafana/grafana:latest
+        restart_policy: always
+        network_mode: "host"
+        volumes:
+          - "{{ grafana_volume }}:/var/lib/grafana"
+          - "{{ grafana_provisioning_dir }}:/etc/grafana/provisioning"
+          - "{{ grafana_dashboards_dir }}:/etc/grafana/provisioning/dashboards"
+        env:
+          GF_PROVISIONING_DATASOURCES_ALLOW_DELETION: "true"
+      notify: Restart Grafana
+
+  handlers:
+    - name: Reload Prometheus
+      uri:
+        url: http://localhost:9090/-/reload
+        method: POST
+      ignore_errors: yes
+
+    - name: Restart Grafana
+      docker_container:
+        name: grafana
+        state: started
+        restart: true
