@@ -1,3 +1,6 @@
+# --------------------------------------------------
+# MySQL 방화벽 정책
+# --------------------------------------------------
 resource "google_compute_firewall" "babpat_mysql" {
   name    = "babpat-mysql"
   network = data.google_compute_network.default.id
