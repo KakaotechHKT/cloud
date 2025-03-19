@@ -66,6 +66,6 @@ resource "google_compute_firewall" "babpat_monitoring_target" {
     ]
   }
 
-  source_tags = ["babpat-monitoring"]
+  source_ranges = ["0.0.0.0/0"]
   target_tags = ["babpat-monitoring-target"]
 }
