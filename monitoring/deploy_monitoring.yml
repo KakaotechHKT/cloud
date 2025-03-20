@@ -3,11 +3,36 @@
   vars:
     prometheus_dir: /opt/monitoring
     grafana_dir: /opt/monitoring/grafana
+    alertmanager_dir: /opt/monitoring/alertmanager
+
     prometheus_config: /opt/monitoring/prometheus.yml
+    alertmanager_config: /opt/monitoring/alertmanager/alertmanager.yml
+    alert_rule_config: /opt/monitoring/alert-rules.yml
+
     grafana_provisioning_dir: /opt/monitoring/grafana/provisioning
     grafana_dashboards_dir: /opt/monitoring/grafana/dashboards
-    prometheus_volume: prometheus_data   # Docker 볼륨 이름
-    grafana_volume: grafana_data         # Docker 볼륨 이름
+
+    prometheus_volume: prometheus_data
+    grafana_volume: grafana_data
+
+  pre_tasks:
+    - name: Check if Prometheus container exists
+      docker_container_info:
+        name: prometheus
+      register: prometheus_info
+      ignore_errors: yes
+
+    - name: Check if Alertmanager container exists
+      docker_container_info:
+        name: alertmanager
+      register: alertmanager_info
+      ignore_errors: yes
+
+    - name: Check if Grafana container exists
+      docker_container_info:
+        name: grafana
+      register: grafana_info
+      ignore_errors: yes
 
   tasks:
     - name: Update apt package index
@@ -37,12 +62,14 @@
     - name: Ensure monitoring directories exist
       file:
         path: "{{ item }}"
+        state: directory
         mode: '0755'
       loop:
         - "{{ prometheus_dir }}"
         - "{{ grafana_dir }}"
         - "{{ grafana_provisioning_dir }}"
         - "{{ grafana_dashboards_dir }}"
+        - "{{ alertmanager_dir }}"
 
     - name: Copy Prometheus config
       copy:
@@ -51,7 +78,28 @@
         owner: root
         group: root
         mode: '0644'
-      notify: Reload Prometheus
+      notify: Restart Prometheus
+      when: prometheus_info.container is defined
+
+    - name: Copy Alert Rules
+      copy:
+        src: alert-rules.yml
+        dest: "{{ alert_rule_config }}"
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Prometheus
+      when: prometheus_info.container is defined
+
+    - name: Copy Alertmanager config
+      copy:
+        src: alertmanager.yml
+        dest: "{{ alertmanager_config }}"
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Alertmanager
+      when: alertmanager_info.container is defined
 
     - name: Synchronize Grafana provisioning config
       synchronize:
@@ -63,6 +111,7 @@
           - "--delete"
       notify: Restart Grafana
       become: true
+      when: grafana_info.container is defined
 
     - name: Copy Grafana dashboards
       copy:
@@ -72,6 +121,7 @@
         group: root
         mode: '0644'
       notify: Restart Grafana
+      when: grafana_info.container is defined
 
     - name: Create Prometheus data volume
       docker_volume:
@@ -83,23 +133,28 @@
         name: "{{ grafana_volume }}"
         state: present
 
-    - name: Check if Prometheus container is running
-      shell: "docker ps --filter 'name=prometheus' --format '{{ '{{' }}.Names{{ '}}' }}'"
-      register: prometheus_running
-      changed_when: false
-
-    - name: Run Prometheus container if not running
+    - name: Run Prometheus container
       docker_container:
         name: prometheus
         image: prom/prometheus:latest
         restart_policy: always
         network_mode: "host"
         volumes:
-          - "{{ prometheus_config }}:/etc/prometheus/prometheus.yml"
+          - "{{ prometheus_config }}:/etc/prometheus/prometheus.yml:delegated"
+          - "{{ alert_rule_config }}:/etc/prometheus/alert-rules.yml:delegated"
           - "{{ prometheus_volume }}:/prometheus"
-        command: "--config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle --storage.tsdb.path=/prometheus"
-      when: prometheus_running.stdout == ""
-    
+        command: "--config.file=/etc/prometheus/prometheus.yml --web.enable-lifecycle --storage.tsdb.path=/prometheus --web.external-url=http://34.64.168.196:9090"
+
+    - name: Run Alertmanager container
+      docker_container:
+        name: alertmanager
+        image: prom/alertmanager:latest
+        restart_policy: always
+        network_mode: "host"
+        volumes:
+          - "{{ alertmanager_config }}:/etc/alertmanager/alertmanager.yml:delegated"
+        command: "--config.file=/etc/alertmanager/alertmanager.yml"
+
     - name: Run Grafana container
       docker_container:
         name: grafana
@@ -112,14 +167,19 @@
           - "{{ grafana_dashboards_dir }}:/etc/grafana/provisioning/dashboards"
         env:
           GF_PROVISIONING_DATASOURCES_ALLOW_DELETION: "true"
-      notify: Restart Grafana
 
   handlers:
-    - name: Reload Prometheus
-      uri:
-        url: http://localhost:9090/-/reload
-        method: POST
-      ignore_errors: yes
+    - name: Restart Prometheus
+      docker_container:
+        name: prometheus
+        state: started
+        restart: true
+
+    - name: Restart Alertmanager
+      docker_container:
+        name: alertmanager
+        state: started
+        restart: true
 
     - name: Restart Grafana
       docker_container:

@@ -35,7 +35,7 @@ resource "google_compute_firewall" "babpat_monitoring_server" {
 
   allow {
     protocol = "tcp"
-    ports    = ["3000", "9090"] # grafana, prometheus
+    ports    = ["3000", "9090", "9093"] # grafana, prometheus, alertmanager
   }
 
   source_ranges = ["0.0.0.0/0"]
