@@ -1,0 +1,3 @@
+credential_file_path = "your credential file pah"
+project = "your project name"
+region                = "your region name"
