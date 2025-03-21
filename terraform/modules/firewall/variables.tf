@@ -39,6 +39,11 @@ variable "source_ranges" {
   type        = list(string)
 }
 
+variable "source_tags" {
+  description = "Source tags"
+  type        = list(string)
+}
+
 variable "target_tags" {
   description = "Target tags"
   type        = list(string)

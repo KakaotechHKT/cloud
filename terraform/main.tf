@@ -146,6 +146,7 @@ module "firewall_mysql" {
   ]
 
   source_ranges  = ["0.0.0.0/0"]
+  source_tags    = []
   target_tags    = ["babpat-mysql"]
 }
 
@@ -201,6 +202,7 @@ module "firewall_monitoring_server" {
   ]
 
   source_ranges  = ["0.0.0.0/0"]
+  source_tags    = []
   target_tags    = ["babpat-monitoring"]
 }
 
@@ -221,6 +223,7 @@ module "firewall_monitoring_target" {
     }
   ]
 
-  source_ranges  = ["0.0.0.0/0"]
+  source_ranges  = ["34.64.168.196/32"]
+  source_tags    = []
   target_tags    = ["babpat-monitoring-target"]
 }
