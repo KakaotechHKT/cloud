@@ -1,82 +1,115 @@
 # Babpat Cloud - Terraform
 
-이 프로젝트는 **Terraform을 사용하여 Google Cloud Platform(GCP)의 인프라를 관리**합니다.
+이 프로젝트는 **Terraform을 사용하여 Google Cloud Platform(GCP)의 인프라를 코드로 관리**합니다.  
+개발(dev), 운영(prod), 공유(shared) 환경을 **워크스페이스 기반으로 분리**하며, **모듈화를 통해 코드 중복을 제거**했습니다.
 
-## 1. 초기 설정 (최초 실행 시 필요)
-이 프로젝트를 처음 Git에서 Clone한 후, 다음 단계를 수행하세요.
+---
 
-### **GCP 인증 설정**
-Terraform을 실행하기 위해 GCP 인증이 필요합니다. 다음 명령어로 인증 파일을 설정하세요.
+## 1. 초기 설정
 
-```sh
+### GCP 인증 설정
+Terraform이 GCP에 접근하려면 인증이 필요합니다.
+
+#### 방법 1: `gcloud` CLI 사용
+```bash
 gcloud auth application-default login
 ```
 
-또는, 개인 GCP 서비스 계정 키(JSON)를 생성하고 `terraform.tfvars`에 추가하세요.
-```sh
-echo '{ "type": "service_account", "project_id": "your-project-id", ... }' > terraform.tfvars
+#### 방법 2: 서비스 계정 키(JSON) 사용
+1. GCP 콘솔에서 서비스 계정 키(JSON) 생성
+2. `terraform.tfvars`에 경로를 지정
+
+```hcl
+# terraform.tfvars 예시
+credential_file_path = "your/path/to/service-account.json"
 ```
 
-## 2. Terraform 실행 방법
+---
 
-### 2.1 Terraform 초기화
-최초 실행 시 Terraform을 초기화해야 합니다.
-```sh
+## 2. 워크스페이스 기반 환경 구성
+
+이 프로젝트는 `terraform workspace`를 활용하여 **dev**, **prod**, **shared** 환경을 분리합니다.
+
+### 2.1 워크스페이스 생성 및 선택
+
+```bash
+terraform workspace new dev
+terraform workspace new prod
+terraform workspace new shared
+
+terraform workspace select dev      # 사용하고 싶은 환경 선택
+```
+
+---
+
+## 3. Terraform 명령어
+
+### 3.1 초기화
+```bash
 terraform init
 ```
 
-### 2.2 현재 상태 확인
-Terraform이 현재 GCP 리소스와 상태를 비교하여 어떤 변경이 필요한지 확인합니다.
-```sh
+### 3.2 현재 변경사항 확인
+```bash
 terraform plan
 ```
 
-### 2.3 변경 사항 적용 미리보기
-GCP에 Terraform이 정의한 인프라를 반영의 결과를 미리봅니다.
-```sh
-terraform plan
-```
-
-### 2.4 변경 사항 적용하기
-```sh
+### 3.3 인프라 적용
+```bash
 terraform apply
 ```
-내용을 확인하고 yes를 입력하여 적용 가능합니다.  
-실제 인프라 구조가 바뀔 수 있으므로 주의!
 
-### 2.5 리소스 삭제 (주의! 전체 삭제됨)
-```sh
+### 3.4 리소스 삭제 (현재 워크스페이스에 한함, 주의!)
+```bash
 terraform destroy
 ```
-이 명령어는 모든 리소스를 삭제하므로 주의!!!!!!
 
-## 3. 팀원 협업 규칙
-- `terraform.tfstate` 및 `terraform.tfvars` 파일은 **Git에 추가하지 마세요!**
-- `.terraform.lock.hcl` 파일을 Git에 포함하여 **모든 팀원이 같은 Provider 버전을 사용하도록 유지**하세요.
-- 새로운 인프라를 추가할 경우 `terraform plan`을 먼저 실행하여 변경 사항을 확인하세요.
-- 변경 적용 전, 팀원들과 공유하고 협의 후 실행하세요.
+---
 
-## 4. Troubleshooting (문제 해결)
-### Terraform이 예상치 못한 변경을 감지함
-```sh
-terraform plan
-```
-출력된 변경 사항을 확인하고, `terraform refresh`를 실행하여 최신 상태를 반영하세요.
+## 4. 기존 리소스 import
 
-### `terraform apply` 후에도 변경 사항이 계속 발생함
-- `terraform state list`로 현재 상태를 확인하세요.
-- 필요하면 `terraform import`를 실행하여 기존 리소스를 Terraform 상태에 추가하세요.
-```sh
-terraform import google_compute_firewall.babpat_mysql projects/YOUR_PROJECT/global/firewalls/babpat-mysql
+이미 수동으로 생성된 GCP 리소스를 Terraform 상태에 등록하려면 아래 명령어를 사용합니다.
+
+```bash
+terraform import "module.compute_dev[0].google_compute_instance.this" "projects/PROJECT/zones/ZONE/instances/INSTANCE_NAME"
 ```
 
-### Terraform이 특정 리소스를 삭제하려고 함
-`lifecycle { prevent_destroy = true }` 옵션을 추가하여 보호할 수 있습니다.
+> **zsh 사용자라면 `[]`가 포함된 주소는 반드시 큰따옴표로 감싸야 합니다!**
+
+---
+
+## 5. 협업 규칙
+
+- `terraform.tfstate`, `.terraform/`, `terraform.tfvars`는 Git에 절대 커밋하지 마세요!
+- `.terraform.lock.hcl`은 커밋해서 provider 버전을 고정하세요.
+- `terraform plan` → 팀원과 공유 → `terraform apply` 순서를 반드시 지켜주세요.
+
+---
+
+## 6. 문제 해결 가이드
+
+### 예상치 못한 변경 감지 시
+```bash
+terraform refresh
+```
+상태 파일과 실제 인프라를 동기화합니다.
+
+### 계속 변경사항이 발생하는 경우
+이미 존재하는 리소스를 Terraform 상태에 등록하세요:
+```bash
+terraform import "..." "..."
+```
+
+### 리소스를 삭제하지 못하게 보호
 ```hcl
-resource "google_compute_instance" "example" {
-  ...
-  lifecycle {
-    prevent_destroy = true
-  }
+lifecycle {
+  prevent_destroy = true
+}
+```
+
+### description 변경으로 리소스가 destroy되는 경우 방지
+```hcl
+lifecycle {
+  ignore_changes = ["description"]
 }
 ```
