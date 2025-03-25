@@ -3,7 +3,9 @@ name: Terraform Deploy
 on:
   push:
     branches:
-      - main
+      - dev
+      - prod
+      - shared
 
 jobs:
   terraform:
@@ -11,8 +13,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Set working directory based on branch
+        id: set-dir
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "terraform-dev" ]]; then
+            echo "dir=envs/dev" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF##*/}" == "terraform-prod" ]]; then
+            echo "dir=envs/prod" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF##*/}" == "terraform-shared" ]]; then
+            echo "dir=envs/shared" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Unknown branch: ${GITHUB_REF##*/}"
+            exit 1
+          fi
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -26,9 +42,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+        working-directory: ${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Plan
         run: terraform plan
+        working-directory: ${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
+        working-directory: ${{ steps.set-dir.outputs.dir }}
