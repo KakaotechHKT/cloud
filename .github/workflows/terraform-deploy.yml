@@ -42,12 +42,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ${{ steps.set-dir.outputs.dir }}
+        working-directory: ./${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Plan
         run: terraform plan
-        working-directory: ${{ steps.set-dir.outputs.dir }}
+        working-directory: ./${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        working-directory: ${{ steps.set-dir.outputs.dir }}
+        working-directory: ./${{ steps.set-dir.outputs.dir }}
