@@ -40,6 +40,6 @@ resource "google_compute_instance" "this" {
   }
 
   lifecycle {
-    ignore_changes = [service_account, description]
+    ignore_changes = [service_account, description, metadata["ssh-keys"]]
   }
 }
