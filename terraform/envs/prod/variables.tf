@@ -11,4 +11,5 @@ variable "credential_file_path" {
   description = "Local path to GCP credentials file"
   type        = string
   sensitive   = true
+  default     = ""
 }
