@@ -19,11 +19,11 @@ jobs:
       - name: Set working directory based on branch
         id: set-dir
         run: |
-          if [[ "${GITHUB_REF##*/}" == "terraform-dev" ]]; then
+          if [[ "${GITHUB_REF##*/}" == "dev" ]]; then
             echo "dir=envs/dev" >> $GITHUB_OUTPUT
-          elif [[ "${GITHUB_REF##*/}" == "terraform-prod" ]]; then
+          elif [[ "${GITHUB_REF##*/}" == "prod" ]]; then
             echo "dir=envs/prod" >> $GITHUB_OUTPUT
-          elif [[ "${GITHUB_REF##*/}" == "terraform-shared" ]]; then
+          elif [[ "${GITHUB_REF##*/}" == "shared" ]]; then
             echo "dir=envs/shared" >> $GITHUB_OUTPUT
           else
             echo "❌ Unknown branch: ${GITHUB_REF##*/}"
