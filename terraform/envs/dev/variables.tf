@@ -1,12 +1,10 @@
 variable "project" {
-  description = "GCP project ID"
-  type        = string
+  type = string
 }
 
 variable "region" {
-  description = "GCP region"
-  type        = string
-  default     = "asia-northeast3"
+  type    = string
+  default = "asia-northeast3"
 }
 
 variable "credential_file_path" {
