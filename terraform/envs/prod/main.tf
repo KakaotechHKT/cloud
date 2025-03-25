@@ -57,8 +57,8 @@ module "mig_backend" {
   source                  = "../../modules/mig"
   name                    = "babpat-be"
   instance_template       = "babpat-be-template"
-  min_replicas            = 2
-  max_replicas            = 5
+  min_replicas            = 1
+  max_replicas            = 2
   target_cpu_utilization  = 0.6
   region                  = var.region
   ports                   = ["8080"]
@@ -102,8 +102,8 @@ module "mig_ai" {
   source                  = "../../modules/mig"
   name                    = "babpat-ai"
   instance_template       = "babpat-ai-template"
-  min_replicas            = 2
-  max_replicas            = 5
+  min_replicas            = 1
+  max_replicas            = 2
   target_cpu_utilization  = 0.6
   region                  = var.region
   ports                   = ["8000"]
