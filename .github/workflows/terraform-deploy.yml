@@ -20,11 +20,11 @@ jobs:
         id: set-dir
         run: |
           if [[ "${GITHUB_REF##*/}" == "dev" ]]; then
-            echo "dir=envs/dev" >> $GITHUB_OUTPUT
+            echo "dir=terraform/envs/dev" >> $GITHUB_OUTPUT
           elif [[ "${GITHUB_REF##*/}" == "prod" ]]; then
-            echo "dir=envs/prod" >> $GITHUB_OUTPUT
+            echo "dir=terraform/envs/prod" >> $GITHUB_OUTPUT
           elif [[ "${GITHUB_REF##*/}" == "shared" ]]; then
-            echo "dir=envs/shared" >> $GITHUB_OUTPUT
+            echo "dir=terraform/envs/shared" >> $GITHUB_OUTPUT
           else
             echo "❌ Unknown branch: ${GITHUB_REF##*/}"
             exit 1
@@ -42,12 +42,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./${{ steps.set-dir.outputs.dir }}
+        working-directory: ${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Plan
         run: terraform plan
-        working-directory: ./${{ steps.set-dir.outputs.dir }}
+        working-directory: ${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
-        working-directory: ./${{ steps.set-dir.outputs.dir }}
+        working-directory: ${{ steps.set-dir.outputs.dir }}
