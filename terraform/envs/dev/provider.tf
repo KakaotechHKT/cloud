@@ -1,7 +1,9 @@
 provider "google" {
   project     = var.project
   region      = var.region
-  credentials = file(var.credential_file_path)
+  credentials = (
+    length(var.credential_file_path) > 0 ? file(var.credential_file_path) : null
+  )
 }
 
 terraform {
