@@ -16,14 +16,10 @@ jobs:
       - name: Checkout main branch first
         uses: actions/checkout@v3
         with:
+          ref: ${{ env.ENV }}
           fetch-depth: 0
           persist-credentials: false
           fetch-tags: false
-
-      - name: Fetch and Checkout target branch
-        run: |
-          git fetch origin $ENV
-          git checkout $ENV
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
