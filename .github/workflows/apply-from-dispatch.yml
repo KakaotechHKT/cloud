@@ -21,6 +21,14 @@ jobs:
           persist-credentials: false
           fetch-tags: false
 
+      - name: Set up Google Cloud Credentials
+        run: |
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > /tmp/account.json
+        shell: bash
+  
+      - name: Set GOOGLE_APPLICATION_CREDENTIALS
+        run: echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/account.json" >> $GITHUB_ENV
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
 
