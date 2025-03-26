@@ -13,7 +13,7 @@ jobs:
       ENV: ${{ github.event.client_payload.environment }}
 
     steps:
-      - name: Checkout main branch first
+      - name: Checkout first
         uses: actions/checkout@v3
         with:
           ref: ${{ github.event.client_payload.environment }}
@@ -26,7 +26,7 @@ jobs:
 
       - name: Update Template Suffix
         run: |
-          FILE="terraform/envs/$ENV/main.tf"
+          FILE="terraform/envs/${{ env.ENV }}/main.tf"
 
           echo "🔧 환경: $ENV"
           echo "🎯 타겟: $TARGET"
@@ -51,18 +51,18 @@ jobs:
         run: terraform fmt
 
       - name: Init Terraform
-        working-directory: terraform/envs/$ENV
+        working-directory: terraform/envs/${{ env.ENV }}
         run: terraform init
 
       - name: Apply Terraform
-        working-directory: terraform/envs/$ENV
+        working-directory: terraform/envs/${{ env.ENV }}
         run: terraform apply -auto-approve
 
-
       - name: Commit and Push
+        working-directory: terraform/envs/${{ env.ENV }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add terraform/envs/$ENV/main.tf
+          git add terraform/envs/${{ env.ENV }}/main.tf
           git commit -m "ci(dispatch): update ${TARGET^^} template_suffix to $SUFFIX" || echo "✅ 변경 사항 없음, 커밋 생략"
           git push origin $ENV
