@@ -67,6 +67,13 @@ resource "google_compute_region_instance_group_manager" "this" {
     health_check      = google_compute_health_check.this.self_link
     initial_delay_sec = 60
   }
+
+  update_policy {
+    type                    = "PROACTIVE"
+    minimal_action          = "REPLACE"
+    max_surge_fixed         = 1
+    max_unavailable_fixed   = 0
+  }
 }
 
 resource "google_compute_region_autoscaler" "this" {
