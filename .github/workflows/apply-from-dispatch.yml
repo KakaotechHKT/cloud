@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Terraform Repo
         uses: actions/checkout@v3
         with:
-          ref: $ENV
+          ref: ${{ env.ENV }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
