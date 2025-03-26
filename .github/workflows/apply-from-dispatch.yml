@@ -20,11 +20,6 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
           fetch-tags: false
-
-      - name: Set up Google Cloud Credentials
-        run: |
-          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > /tmp/account.json
-        shell: bash
   
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
