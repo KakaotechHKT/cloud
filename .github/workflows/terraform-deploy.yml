@@ -51,8 +51,9 @@ jobs:
       - name: Terraform Plan
         id: tfplan
         run: |
-          terraform plan -detailed-exitcode || echo "exit=$?" >> $GITHUB_OUTPUT
-        working-directory: ${{ steps.set-dir.outputs.dir }}
+          terraform plan -detailed-exitcode -out=tfplan.out
+          exitcode=$?
+          echo "exit=$exitcode" >> $GITHUB_OUTPUT
 
       - name: Terraform Apply
         if: steps.tfplan.outcome == 'success' && steps.tfplan.outputs.exit == '2'
