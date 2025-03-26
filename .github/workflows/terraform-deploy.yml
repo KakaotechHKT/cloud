@@ -9,6 +9,7 @@ on:
 
 jobs:
   terraform:
+    if: ${{ !startsWith(github.event.head_commit.message, 'ci(dispatch):') && !contains(github.event.head_commit.message, '[ci-skip]') }}
     name: Terraform Apply
     runs-on: ubuntu-latest
     env:
@@ -48,9 +49,12 @@ jobs:
         working-directory: ${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Plan
-        run: terraform plan
+        id: tfplan
+        run: |
+          terraform plan -detailed-exitcode || echo "exit=$?" >> $GITHUB_OUTPUT
         working-directory: ${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Apply
+        if: steps.tfplan.outcome == 'success' && steps.tfplan.outputs.exit == '2'
         run: terraform apply -auto-approve
         working-directory: ${{ steps.set-dir.outputs.dir }}

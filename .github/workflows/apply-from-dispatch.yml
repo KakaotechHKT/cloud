@@ -1,0 +1,65 @@
+name: Apply Terraform via Dispatch
+
+on:
+  repository_dispatch:
+    types: [image-updated]
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ github.event.client_payload.target }}
+      SUFFIX: ${{ github.event.client_payload.template_suffix }}
+      ENV: ${{ github.event.client_payload.environment }}
+
+    steps:
+      - name: Checkout Terraform Repo
+        uses: actions/checkout@v3
+        with:
+          ref: $ENV
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Update Template Suffix
+        run: |
+          FILE="terraform/envs/$ENV/main.tf"
+
+          echo "🔧 환경: $ENV"
+          echo "🎯 타겟: $TARGET"
+          echo "🕐 템플릿 suffix: $SUFFIX"
+
+          if [ ! -f "$FILE" ]; then
+            echo "❌ 파일이 존재하지 않습니다: $FILE"
+            exit 1
+          fi
+
+          if [ "$TARGET" = "ai" ]; then
+            sed -i 's/ai_template_suffix = "[^"]*"/ai_template_suffix = "'"$SUFFIX"'"/' "$FILE"
+          elif [ "$TARGET" = "be" ]; then
+            sed -i 's/be_template_suffix = "[^"]*"/be_template_suffix = "'"$SUFFIX"'"/' "$FILE"
+          else
+            echo "❌ 알 수 없는 타겟: $TARGET"
+            exit 1
+          fi
+
+
+      - name: Format Terraform Code
+        run: terraform fmt
+
+      - name: Init Terraform
+        working-directory: terraform/envs/$ENV
+        run: terraform init
+
+      - name: Apply Terraform
+        working-directory: terraform/envs/$ENV
+        run: terraform apply -auto-approve
+
+
+      - name: Commit and Push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add terraform/envs/$ENV/main.tf
+          git commit -m "ci(dispatch): update ${TARGET^^} template_suffix to $SUFFIX"
+          git push origin $ENV
