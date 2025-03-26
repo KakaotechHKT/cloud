@@ -49,13 +49,9 @@ jobs:
         working-directory: ${{ steps.set-dir.outputs.dir }}
 
       - name: Terraform Plan
-        id: tfplan
+        run: terraform plan
         working-directory: ${{ steps.set-dir.outputs.dir }}
-        run: |
-          terraform plan -detailed-exitcode -out=tfplan.out
-          echo "exit=$?" >> $GITHUB_OUTPUT
-      
+
       - name: Terraform Apply
-        if: steps.tfplan.outputs.exit == '2'
-        run: terraform apply -auto-approve tfplan.out
+        run: terraform apply -auto-approve
         working-directory: ${{ steps.set-dir.outputs.dir }}
