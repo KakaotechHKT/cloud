@@ -30,6 +30,11 @@ resource "google_compute_instance_template" "this" {
   lifecycle {
     create_before_destroy = true
   }
+
+  service_account {
+    email  = var.service_account_email
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+  }
 }
 
 resource "google_compute_health_check" "this" {

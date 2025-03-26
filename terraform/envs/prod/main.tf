@@ -9,6 +9,12 @@ data "google_compute_subnetwork" "default" {
   project = var.project
 }
 
+locals {
+  be_template_suffix = "202503262000"
+  ai_template_suffix = "202503261200"
+}
+
+
 module "eip_prod" {
   source       = "../../modules/ip"
   address_name = "babpat-eip-prod"
@@ -56,7 +62,7 @@ module "nat" {
 module "mig_backend" {
   source                  = "../../modules/mig"
   name                    = "babpat-be"
-  instance_template       = "babpat-be-template"
+  instance_template       = "babpat-be-template-${local.be_template_suffix}"
   min_replicas            = 1
   max_replicas            = 2
   target_cpu_utilization  = 0.6
@@ -68,6 +74,7 @@ module "mig_backend" {
   network_id              = data.google_compute_network.default.id
   subnetwork_id           = module.private_subnet.self_link
   no_external_ip          = true
+  service_account_email   = "697671643244-compute@developer.gserviceaccount.com"
   source_image            = "projects/${var.project}/global/images/babpat-backend-image-img"
   startup_script          = <<-EOT
     #!/bin/bash
@@ -101,7 +108,7 @@ module "ilb_backend" {
 module "mig_ai" {
   source                  = "../../modules/mig"
   name                    = "babpat-ai"
-  instance_template       = "babpat-ai-template"
+  instance_template       = "babpat-ai-template-${local.ai_template_suffix}"
   min_replicas            = 2
   max_replicas            = 5
   target_cpu_utilization  = 0.6
@@ -113,6 +120,7 @@ module "mig_ai" {
   network_id              = data.google_compute_network.default.id
   subnetwork_id           = module.private_subnet.self_link
   no_external_ip          = true
+  service_account_email   = "697671643244-compute@developer.gserviceaccount.com"
   source_image            = "projects/${var.project}/global/images/babpat-ai-image-img"
   startup_script          = <<-EOT
     #!/bin/bash

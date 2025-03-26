@@ -73,3 +73,8 @@ variable "port_name" {
   type    = string
   default = "http"
 }
+
+variable "service_account_email" {
+  type    = string
+  default = null
+}
