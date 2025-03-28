@@ -17,7 +17,7 @@ module "eip_mysql" {
 module "compute_mysql" {
   source          = "../../modules/compute"
   instance_name   = "babpat-compute-mysql"
-  machine_type    = "e2-standard-2"
+  machine_type    = "e2-small"
   zone            = "asia-northeast3-c"
   nat_ip          = module.eip_mysql.ip_address
   network_id      = data.google_compute_network.default.id
