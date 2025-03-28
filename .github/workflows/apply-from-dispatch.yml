@@ -60,12 +60,17 @@ jobs:
 
       - name: Init Terraform
         working-directory: terraform/envs/${{ env.ENV }}
-        run: terraform init
+        run: terraform init -input=false -upgrade -no-color
+        env:
+          TF_LOG: DEBUG
+          TF_LOG_PATH: terraform_debug.log
 
       - name: Apply Terraform
         working-directory: terraform/envs/${{ env.ENV }}
-        run: terraform apply -auto-approve
-
+        run: terraform apply -auto-approve -lock-timeout=60s
+        env:
+          TF_LOG: DEBUG
+          TF_LOG_PATH: terraform_debug.log
       - name: Commit and Push
         working-directory: terraform/envs/${{ env.ENV }}
         run: |
