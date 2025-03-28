@@ -24,13 +24,15 @@ jobs:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v1
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.11.2
 
       - name: Update Template Suffix
         run: |
@@ -60,7 +62,7 @@ jobs:
 
       - name: Init Terraform
         working-directory: terraform/envs/${{ env.ENV }}
-        run: terraform init -input=false -upgrade -no-color
+        run: terraform init -input=false -no-color
         env:
           TF_LOG: DEBUG
           TF_LOG_PATH: terraform_debug.log
@@ -71,6 +73,7 @@ jobs:
         env:
           TF_LOG: DEBUG
           TF_LOG_PATH: terraform_debug.log
+    
       - name: Commit and Push
         working-directory: terraform/envs/${{ env.ENV }}
         run: |
